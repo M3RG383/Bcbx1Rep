@@ -498,17 +498,40 @@ export default function UploadPage() {
 
   // Step 3 — Success
   if (step === 3 && uploadResult) {
-    // Generate a short audio profile description from analysis
+    // Generate a visceral audio profile description
     const audioProfile = analysisResult ? (() => {
       const dd = analysisResult.dashboard;
       const bpm = dd.bpm > 0 ? dd.bpm : "—";
-      const stereo = dd.stereoCorrelation >= 0.5 ? "Wide" : dd.stereoCorrelation >= 0.3 ? "Moderate" : "Narrow";
-      const bandwidth = dd.bandwidthHz > 15000 ? "High" : dd.bandwidthHz > 10000 ? "Full" : "Limited";
-      const dynamics = dd.dynamicRangeDB > 12 ? "Dynamic" : dd.dynamicRangeDB > 8 ? "Compressed" : "Heavily Compressed";
-      const bass = dd.bassRatio > 0.25 ? "Bass-heavy" : dd.bassRatio > 0.15 ? "Balanced" : "Bass-light";
-      const quality = analysisResult.overallScore >= 90 ? "Industry-standard" : analysisResult.overallScore >= 70 ? "Decent" : "Low definition";
-      const genreProfile = analysisResult.genre.name;
-      return `${quality} · ${bass} · ${bandwidth} bandwidth · ${dynamics} · ${stereo} stereo · ${bpm} BPM (${genreProfile})`;
+
+      // Sub-bass presence — determines if you feel it on a big system
+      const subEnergy = dd.subEnergyIndex;
+      const subDesc = subEnergy > 0.25 ? "Deep sub-bass" : subEnergy > 0.12 ? "Present sub-bass" : "Light sub-bass";
+
+      // Punch factor from crest factor and transient energy
+      const crest = dd.crestFactorDB;
+      const punchDesc = crest > 16 ? "Hard-hitting" : crest > 12 ? "Punchy" : crest > 8 ? "Moderate" : "Soft";
+
+      // Stereo image width
+      const corr = dd.stereoCorrelation;
+      const widthDesc = corr < 0.2 ? "Very wide" : corr < 0.4 ? "Wide" : corr < 0.6 ? "Moderate" : corr < 0.8 ? "Narrow" : "Mono-like";
+
+      // Loud system readiness
+      const clip = dd.clippingRatio;
+      const cleanDesc = clip < 0.0005 ? "Pristine" : clip < 0.002 ? "Clean" : clip < 0.005 ? "Some artifacts" : "Dirty";
+
+      // Dynamic weight on big system
+      const dyn = dd.dynamicRangeDB;
+      const systemDesc = dyn > 14 ? "Thunderous on big rigs" : dyn > 10 ? "Slams on a system" : dyn > 6 ? "Pushes volume well" : "Lacks headroom";
+
+      // Top-end air
+      const treble = dd.trebleRatio;
+      const airDesc = treble > 0.18 ? "Sparkling highs" : treble > 0.10 ? "Clear highs" : treble > 0.05 ? "Dull highs" : "Muffled";
+
+      // Overall character
+      const overall = analysisResult.overallScore;
+      const character = overall >= 90 ? "Mastered" : overall >= 70 ? "Polished" : "Raw";
+
+      return `${character} · ${punchDesc} · ${subDesc} · ${cleanDesc} · ${widthDesc} stereo · ${airDesc} · ${bpm} BPM · ${systemDesc}`;
     })() : null;
 
     const scoreColor = analysisResult?.overallScore != null
