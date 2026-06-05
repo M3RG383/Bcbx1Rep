@@ -47,12 +47,32 @@ export default function SongDetailPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Audio analyzer state (for purchased tracks)
+  // Audio analyzer state — runs on preview audio (available to all visitors)
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioFileGenre, setAudioFileGenre] = useState<string>("Default");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
-  // Fetch the actual audio file for analysis (only for purchased users)
+  // Fetch preview audio for analysis (works for all visitors before purchase)
+  const fetchPreviewForAnalysis = useCallback(async () => {
+    if (!song?.blobUrl || audioFile) return;
+    setAnalysisLoading(true);
+    try {
+      const rawUrl = song.blobUrl;
+      const filename = rawUrl.split("/").pop();
+      const previewUrl = song.previewUrl || `/api/uploads/${filename}`;
+      const res = await fetch(previewUrl);
+      if (!res.ok) { setAnalysisLoading(false); return; }
+      const blob = await res.blob();
+      const ext = filename?.includes(".") ? filename.split(".").pop() : "mp3";
+      const f = new File([blob], filename || `track.${ext}`, { type: blob.type || `audio/${ext}` });
+      setAudioFile(f);
+      setAudioFileGenre(song.genre || "Default");
+    } catch {}
+    setAnalysisLoading(false);
+  }, [song, audioFile]);
+
+  // Fetch full audio for detailed analysis after purchase
   const fetchAudioFile = useCallback(async () => {
     if (!song?.blobUrl || !purchased) return;
     try {
@@ -68,6 +88,7 @@ export default function SongDetailPage() {
     } catch {}
   }, [song, purchased]);
 
+  useEffect(() => { fetchPreviewForAnalysis(); }, [fetchPreviewForAnalysis]);
   useEffect(() => { fetchAudioFile(); }, [fetchAudioFile]);
 
   // Clean up audio when leaving the page — covers React unmount + SPA transitions
@@ -478,18 +499,25 @@ export default function SongDetailPage() {
             </div>
           </div>
 
-          {/* Audio Analyzer Dashboard — shows for owners/artists */}
-          {(connected && purchased) && audioFile && (
+          {/* Audio Analyzer Dashboard — available to all visitors via preview */}
+          {audioFile && (
             <div className="mt-6">
               <h3 className="font-semibold mb-3 text-text-secondary text-sm tracking-wide uppercase">
                 🔊 Audio Analysis Dashboard
               </h3>
-              <AudioAnalyzer
-                key={audioFile.name + audioFile.size}
-                file={audioFile}
-                genre={audioFileGenre}
-                onResult={setAnalysisResult}
-              />
+              {analysisLoading ? (
+                <div className="card p-6 text-center">
+                  <span className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full inline-block animate-spin" />
+                  <p className="text-text-secondary text-sm mt-2">Analyzing preview audio…</p>
+                </div>
+              ) : (
+                <AudioAnalyzer
+                  key={audioFile.name + audioFile.size}
+                  file={audioFile}
+                  genre={audioFileGenre}
+                  onResult={setAnalysisResult}
+                />
+              )}
             </div>
           )}
 
