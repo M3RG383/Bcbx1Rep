@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ wal
       isMember: false,
       uploadFee: UPLOAD_FEE_XNT,
       currency: "XNT",
-      treasury: "8fBujtC8EzsBpvp1fNrZBoPPLq1D7FQ6tPQ9ZXaQBeSx",
+      treasury: "ApJ8Xnp8sFutG4i3pnsfe2C7LxArGJCzeUQpaBdvxhA7",
       subscribeMonthly: MONTHLY_SUB_XNT,
       subscribeYearly: YEARLY_SUB_XNT,
     });

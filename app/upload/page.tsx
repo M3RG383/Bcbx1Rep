@@ -12,7 +12,7 @@ import {
 } from "@solana/web3.js";
 
 const X1_RPC = "https://rpc.mainnet.x1.xyz";
-const TREASURY_ADDRESS = "8fBujtC8EzsBpvp1fNrZBoPPLq1D7FQ6tPQ9ZXaQBeSx";
+const TREASURY_ADDRESS = "ApJ8Xnp8sFutG4i3pnsfe2C7LxArGJCzeUQpaBdvxhA7";
 const TREASURY_PUBKEY = new PublicKey(TREASURY_ADDRESS);
 
 const UPLOAD_FEE_XNT = 1.5;

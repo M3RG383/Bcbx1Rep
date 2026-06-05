@@ -4,8 +4,8 @@ import { useWallet } from "@/components/Providers";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { PublicKey, Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { X1_RPC } from "@/lib/x1";
+import { PublicKey, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { X1_RPC, buildSplitPurchaseTx } from "@/lib/x1";
 import AudioAnalyzer from "@/components/AudioAnalyzer";
 import type { AnalysisResult } from "@/lib/audio-analyzer";
 
@@ -233,22 +233,16 @@ export default function SongDetailPage() {
       }
 
       const connection = new Connection(X1_RPC, "confirmed");
-      const { blockhash } = await connection.getLatestBlockhash();
 
       const fromPubKey = new PublicKey(publicKey);
-      const toPubKey = new PublicKey(song.artistAddress);
       const lamports = Math.round(song.price * LAMPORTS_PER_SOL);
 
-      // Build the transfer transaction
-      const tx = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: fromPubKey,
-          toPubkey: toPubKey,
-          lamports,
-        })
+      // Build split transaction: 80% artist + 20% treasury
+      const tx = await buildSplitPurchaseTx(
+        fromPubKey,
+        song.artistAddress,
+        lamports
       );
-      tx.recentBlockhash = blockhash;
-      tx.feePayer = fromPubKey;
 
       // Sign with wallet (shows 2 XNT confirmation popup), send via raw RPC
       // This bypasses X1's broken simulation/subscription endpoints

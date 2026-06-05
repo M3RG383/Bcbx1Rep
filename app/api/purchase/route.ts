@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvHgetall, kvSadd } from "@/lib/db";
-import { verifyXntTransferTo } from "@/lib/x1";
+import { verifySplitPurchase } from "@/lib/x1";
 import { mintNftToBuyer } from "@/lib/nft-mint";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -37,12 +37,12 @@ export async function POST(req: NextRequest) {
 
     const expectedLamports = Math.round(priceXnt * LAMPORTS_PER_SOL);
 
-    // Verify the on-chain transaction was sent to the artist for the correct amount
-    const verification = await verifyXntTransferTo(
+    // Verify the 80/20 split: 80% to artist, 20% to treasury
+    const verification = await verifySplitPurchase(
       txSignature,
-      expectedLamports,
       buyerWallet,
-      artistAddress
+      artistAddress,
+      expectedLamports
     );
 
     if (!verification.verified) {

@@ -9,6 +9,6 @@ export async function GET() {
     monthlySub: MONTHLY_SUB_XNT,
     yearlySub: YEARLY_SUB_XNT,
     currency: "XNT",
-    treasury: "8fBujtC8EzsBpvp1fNrZBoPPLq1D7FQ6tPQ9ZXaQBeSx",
+    treasury: "ApJ8Xnp8sFutG4i3pnsfe2C7LxArGJCzeUQpaBdvxhA7",
   });
 }
