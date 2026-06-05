@@ -459,7 +459,7 @@ export default function SongDetailPage() {
         {/* Right: Details */}
         <div className="md:col-span-2">
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2">{song.title}</h1>
-          <p className="text-text-secondary text-lg mb-4">by {song.artist}</p>
+          <p className="text-text-secondary text-lg mb-4">by {song.artist.slice(0, 6)}...{song.artist.slice(-4)}</p>
 
           <div className="flex flex-wrap gap-2 mb-6">
             <span className="chip">{song.genre}</span>
