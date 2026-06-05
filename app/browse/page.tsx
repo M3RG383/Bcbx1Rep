@@ -255,7 +255,11 @@ export default function BrowsePage() {
                     className="w-full h-full object-cover rounded-lg"
                   />
                 ) : (
-                  <span className="text-4xl md:text-5xl opacity-30">🎵</span>
+                  <img
+                    src="/brand/bb-logo.jpg"
+                    alt="Blockchain Beats"
+                    className="w-full h-full object-cover rounded-lg opacity-40"
+                  />
                 )}
               </div>
               <div className="space-y-1.5">

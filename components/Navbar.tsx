@@ -56,9 +56,9 @@ export default function Navbar() {
 
         <Link href="/" className="flex items-center justify-center shrink-0">
           <img
-            src="/brand/bbc-logo-final.jpg"
-            alt="BcBx1"
-            className="h-[60px] w-auto object-contain"
+            src="/brand/bb-logo.jpg"
+            alt="Blockchain Beats"
+            className="h-[55px] w-auto object-contain"
           />
         </Link>
 

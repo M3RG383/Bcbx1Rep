@@ -132,7 +132,11 @@ export default function MyPurchasesPage() {
                       className="w-full h-full object-cover rounded-lg"
                     />
                   ) : (
-                    <span className="text-5xl opacity-30">🎵</span>
+                    <img
+                      src="/brand/bb-logo.jpg"
+                      alt="Blockchain Beats"
+                      className="w-full h-full object-cover rounded-lg opacity-40"
+                    />
                   )}
                 </div>
                 <h3 className="font-semibold text-lg hover:text-[#3b82f6] transition-colors truncate">

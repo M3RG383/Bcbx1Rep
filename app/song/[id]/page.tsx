@@ -368,7 +368,11 @@ export default function SongDetailPage() {
                 className="w-full h-full object-cover rounded-2xl"
               />
             ) : (
-              <span className="text-7xl opacity-30">🎵</span>
+              <img
+                src="/brand/bb-logo.jpg"
+                alt="Blockchain Beats"
+                className="w-full h-full object-cover rounded-2xl opacity-30"
+              />
             )}
           </div>
 
