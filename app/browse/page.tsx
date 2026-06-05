@@ -266,7 +266,7 @@ export default function BrowsePage() {
                 <h3 className="font-semibold text-sm md:text-base leading-tight group-hover:text-[#3b82f6] transition-colors line-clamp-1">
                   {song.title}
                 </h3>
-                <p className="text-text-secondary text-xs truncate">{song.artist}</p>
+                <p className="text-text-secondary text-xs truncate font-mono">{song.artist.slice(0, 6)}...{song.artist.slice(-4)}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] md:text-xs bg-[rgba(108,140,255,0.1)] text-[#3b82f6] px-2 py-0.5 rounded-full truncate max-w-[70%]">
                     {song.genre}

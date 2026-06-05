@@ -142,7 +142,7 @@ export default function MyPurchasesPage() {
                 <h3 className="font-semibold text-lg hover:text-[#3b82f6] transition-colors truncate">
                   {song.title}
                 </h3>
-                <p className="text-text-secondary text-sm">{song.artist}</p>
+                <p className="text-text-secondary text-sm font-mono">{song.artist.slice(0, 6)}...{song.artist.slice(-4)}</p>
                 <span className="inline-block mt-1 text-xs bg-[rgba(108,140,255,0.1)] text-[#3b82f6] px-2 py-0.5 rounded-full">
                   {song.genre}
                 </span>
