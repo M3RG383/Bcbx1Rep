@@ -371,7 +371,7 @@ export default function SongDetailPage() {
               <img
                 src="/brand/bb-logo.jpg"
                 alt="Blockchain Beats"
-                className="w-full h-full object-cover rounded-2xl opacity-30"
+                className="w-full h-full object-contain rounded-2xl opacity-30 p-8"
               />
             )}
           </div>

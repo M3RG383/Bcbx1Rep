@@ -135,7 +135,7 @@ export default function MyPurchasesPage() {
                     <img
                       src="/brand/bb-logo.jpg"
                       alt="Blockchain Beats"
-                      className="w-full h-full object-cover rounded-lg opacity-40"
+                      className="w-full h-full object-contain rounded-lg opacity-40 p-4"
                     />
                   )}
                 </div>
