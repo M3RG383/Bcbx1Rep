@@ -498,6 +498,23 @@ export default function UploadPage() {
 
   // Step 3 — Success
   if (step === 3 && uploadResult) {
+    // Generate a short audio profile description from analysis
+    const audioProfile = analysisResult ? (() => {
+      const dd = analysisResult.dashboard;
+      const bpm = dd.bpm > 0 ? dd.bpm : "—";
+      const stereo = dd.stereoCorrelation >= 0.5 ? "Wide" : dd.stereoCorrelation >= 0.3 ? "Moderate" : "Narrow";
+      const bandwidth = dd.bandwidthHz > 15000 ? "High" : dd.bandwidthHz > 10000 ? "Full" : "Limited";
+      const dynamics = dd.dynamicRangeDB > 12 ? "Dynamic" : dd.dynamicRangeDB > 8 ? "Compressed" : "Heavily Compressed";
+      const bass = dd.bassRatio > 0.25 ? "Bass-heavy" : dd.bassRatio > 0.15 ? "Balanced" : "Bass-light";
+      const quality = analysisResult.overallScore >= 90 ? "Industry-standard" : analysisResult.overallScore >= 70 ? "Decent" : "Low definition";
+      const genreProfile = analysisResult.genre.name;
+      return `${quality} · ${bass} · ${bandwidth} bandwidth · ${dynamics} · ${stereo} stereo · ${bpm} BPM (${genreProfile})`;
+    })() : null;
+
+    const scoreColor = analysisResult?.overallScore != null
+      ? (analysisResult.overallScore >= 90 ? "#22c55e" : analysisResult.overallScore >= 70 ? "#eab308" : "#ef4444")
+      : "#6c8cff";
+
     return (
       <div className="max-w-lg mx-auto px-4 py-20 text-center">
         <div className="text-6xl mb-6 animate-float">🎉</div>
@@ -511,6 +528,31 @@ export default function UploadPage() {
           <div className="warm-input text-center font-mono text-xs text-text-secondary mb-2 mx-auto max-w-xs truncate">
             ID: {uploadResult}
           </div>
+
+          {/* Audio Score Card */}
+          {analysisResult && audioProfile && (
+            <div className="rounded-xl p-5 mb-4 text-left" style={{ backgroundColor: `${scoreColor}08`, border: `1px solid ${scoreColor}25` }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-bold flex items-center gap-2">
+                  <span>🎛️</span> Audio Quality Score
+                </span>
+                <div className="relative w-10 h-10 flex-shrink-0">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="15.5" fill="none" stroke={scoreColor} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(analysisResult.overallScore / 100) * 97.4} 97.4`} />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-extrabold" style={{ color: scoreColor }}>{analysisResult.overallScore}</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {audioProfile}
+              </p>
+            </div>
+          )}
+
+          {/* Copyright Scan Notice */}
           <div className="bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.2)] rounded-xl p-4 mb-6 text-left">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-lg">🛡️</span>
@@ -518,7 +560,7 @@ export default function UploadPage() {
             </div>
             <p className="text-text-secondary text-xs leading-relaxed">
               Your track is published. A copyright/plagiarism scan will run automatically
-              during low-activity hours. If any conflicts are found, you'll be notified
+              during low-activity hours. If any conflicts are found, you&apos;ll be notified
               in your artist dashboard. Your content stays yours either way.
             </p>
           </div>
