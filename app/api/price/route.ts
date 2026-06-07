@@ -52,4 +52,4 @@ export async function GET() {
     cached: false,
     timestamp: new Date().toISOString(),
   });
-}
+}  // deploy trigger
