@@ -780,7 +780,7 @@ export default function AudioAnalyzer({ file, genre, onResult }: Props) {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const wfRef = useRef<HTMLCanvasElement>(null);
   const melRef = useRef<HTMLCanvasElement>(null);
@@ -909,20 +909,19 @@ export default function AudioAnalyzer({ file, genre, onResult }: Props) {
   const scoreBgColor = result.overallScore >= 90 ? "rgba(34,197,94,0.1)" : result.overallScore >= 70 ? "rgba(234,179,8,0.1)" : "rgba(239,68,68,0.1)";
 
   return (
-    <div className="warm-card p-5 mb-6 border border-[rgba(108,140,255,0.15)]">
-      {/* Header */}
-      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between text-left">
-        <div className="flex items-center gap-3">
-          <span className="text-lg">🎛️</span>
-          <div>
-            <span className="font-bold text-sm">Audio Analysis Dashboard</span>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: scoreBgColor, color: scoreColor }}>{result.overallScore}%</span>
-              <span className="text-xs text-text-secondary">{result.passed ? "✅ Industry Standard" : "⚠️ Needs Work"}</span>
-            </div>
-          </div>
+    <div className="warm-card p-4 mb-6 border border-[rgba(108,140,255,0.12)]">
+      {/* Compact header / dropdown toggle */}
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between text-left group">
+        <div className="flex items-center gap-2.5">
+          <span>🎛️</span>
+          <span className="text-sm font-semibold group-hover:text-text-primary transition-colors">Audio Analysis</span>
+          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: scoreBgColor, color: scoreColor }}>{result.overallScore}%</span>
+          <span className="text-[11px] text-text-secondary">{result.passed ? "✅" : "⚠️"}</span>
         </div>
-        <span className={`text-text-secondary text-lg transition-transform ${expanded ? "rotate-180" : ""}`}>▼</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-text-secondary opacity-50 group-hover:opacity-80 transition-opacity">{expanded ? "hide" : "show"}</span>
+          <span className={`text-text-secondary text-sm transition-transform ${expanded ? "rotate-180" : ""}`}>▾</span>
+        </div>
       </button>
 
       {expanded && (
