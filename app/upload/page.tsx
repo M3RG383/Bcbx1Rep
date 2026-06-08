@@ -368,24 +368,44 @@ export default function UploadPage() {
         throw new Error(errBody.error || "Subscription failed");
       }
       const data = await res.json();
-      const newMemberStatus = {
-        isMember: true,
-        plan: data.plan,
-        expires: data.expires,
-        unlimitedUploads: true,
-        uploadFee: 0,
-        expiresInDays: data.expiresInDays,
-      };
-      setMemberStatus(newMemberStatus);
-      // Save to localStorage for persistence
+      // Refetch from server to sync with persisted KV store
       try {
-        localStorage.setItem(`bb_member_${publicKey}`, JSON.stringify({
-          plan: data.plan,
-          expires: new Date(data.expires).getTime(),
-          txSignature: txSignature,
-          activatedAt: Date.now(),
-        }));
+        const serverCheck = await fetch(`/api/membership/${publicKey}`);
+        if (serverCheck.ok) {
+          const serverData = await serverCheck.json();
+          if (serverData.isMember) {
+            setMemberStatus(serverData);
+            try {
+              localStorage.setItem(`bb_member_${publicKey}`, JSON.stringify({
+                plan: serverData.plan,
+                expires: new Date(serverData.expires).getTime(),
+                txSignature: txSignature,
+                activatedAt: Date.now(),
+              }));
+            } catch {}
+          }
+        }
       } catch {}
+      // Fallback: use register response directly
+      if (!memberStatus?.isMember) {
+        const newMemberStatus = {
+          isMember: true,
+          plan: data.plan,
+          expires: data.expires,
+          unlimitedUploads: true,
+          uploadFee: 0,
+          expiresInDays: data.expiresInDays,
+        };
+        setMemberStatus(newMemberStatus);
+        try {
+          localStorage.setItem(`bb_member_${publicKey}`, JSON.stringify({
+            plan: data.plan,
+            expires: new Date(data.expires).getTime(),
+            txSignature: txSignature,
+            activatedAt: Date.now(),
+          }));
+        } catch {}
+      }
       setShowSubscribeModal(false);
       setSubscriptionSuccess(`🎫 ${plan === "yearly" ? "Yearly" : "Monthly"} membership active! ${data.expiresInDays} days of unlimited uploads remaining.`);
       setTimeout(() => setSubscriptionSuccess(null), 8000);

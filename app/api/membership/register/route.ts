@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MONTHLY_SUB_XNT, YEARLY_SUB_XNT } from "@/lib/x1";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { verifyXntTransferTo, MONTHLY_SUB_LAMPORTS, YEARLY_SUB_LAMPORTS, TREASURY_ADDRESS } from "@/lib/x1";
+import { kvHset } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -16,19 +18,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Plan must be 'monthly' or 'yearly'" }, { status: 400 });
     }
 
-    const price = plan === "monthly" ? MONTHLY_SUB_XNT : YEARLY_SUB_XNT;
+    const expectedLamports = plan === "monthly" ? MONTHLY_SUB_LAMPORTS : YEARLY_SUB_LAMPORTS;
     const durationMs = plan === "monthly" ? 30 * 24 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000;
+
+    // Verify the tx on-chain: sent from wallet to TREASURY_ADDRESS with the correct amount
+    const verification = await verifyXntTransferTo(
+      txSignature,
+      expectedLamports,
+      wallet,
+      TREASURY_ADDRESS
+    );
+
+    if (!verification.verified) {
+      return NextResponse.json(
+        { error: verification.message, verified: false },
+        { status: 400 }
+      );
+    }
+
     const expires = Date.now() + durationMs;
 
-    // The tx was already confirmed client-side on X1 mainnet.
-    // The tx signature is the source of truth — verifiable on explorer.
-    // Server returns success immediately; client caches in localStorage.
+    // Persist membership in KV store
+    await kvHset(`member:${wallet}`, {
+      plan,
+      expires,
+      txSignature,
+    });
 
     return NextResponse.json({
       success: true,
+      isMember: true,
       wallet,
       plan,
-      price,
+      price: expectedLamports / LAMPORTS_PER_SOL,
       currency: "XNT",
       expires: new Date(expires).toISOString(),
       expiresInDays: Math.round(durationMs / (24 * 60 * 60 * 1000)),
