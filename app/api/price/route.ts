@@ -28,7 +28,7 @@ export async function GET() {
         const data = await res.json();
         // Find the exact pool in the results
         const pool = (data.pools || []).find(
-          (p) => p.address === XNT_USDC_POOL
+          (p: { address: string }) => p.address === XNT_USDC_POOL
         );
         if (pool?.priceUsd) {
           return NextResponse.json({
