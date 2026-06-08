@@ -847,8 +847,9 @@ export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) 
 
   // Draw panels when data arrives
   useEffect(() => {
-    if (!result || !result.dashboard) return;
+    if (!result) return;
     const dd = result.dashboard;
+    if (!dd) return; // No dashboard data (cached result) — skip canvas rendering
 
     // Waveform
     const wf = wfRef.current;
@@ -981,8 +982,9 @@ export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) 
             </div>
           </div>
 
-          {/* 5-Panel Dashboard */}
+          {/* 5-Panel Dashboard — hidden when data is from cache (no dashboard) */}
           {result.dashboard && (
+            <>
             <div className="bg-black rounded-2xl overflow-hidden border border-[rgba(255,255,255,0.08)]" style={{ aspectRatio: `${canvasW} / ${panelH * 7 + 60}` }}>
             <div className="w-full" style={{ padding: 0 }}>
               <canvas ref={wfRef} className="w-full h-auto block" style={{ aspectRatio: `${canvasW} / ${panelH}` }} />
@@ -994,6 +996,7 @@ export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) 
               <canvas ref={avgRef} className="w-full h-auto block" style={{ aspectRatio: `${canvasW} / ${panelH}` }} />
             </div>
             </div>
+            </>
           )}
 
           {/* Metrics Grid */}
