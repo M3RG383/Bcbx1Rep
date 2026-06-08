@@ -5,21 +5,20 @@ export const runtime = "nodejs";
 /**
  * Returns the live XNT→USD price.
  *
- * Reads directly from a known XNT/USDC DEX pool on X1 via RPC.
- * Falls back to the x1.ninja API if a key is available, then to a
- * CoinGecko SOL price * approximate ratio if all else fails.
- *
- * The user's x1.ninja key will be set as X1_NINJA_KEY in Vercel env.
+ * Queries the XNT/USDC.X pool on X1 by exact pool address via the x1.ninja API.
+ * Falls back to a reasonable estimate if the API call fails.
  */
+
+// Exact XNT/USDC.X pool address on X1
+const XNT_USDC_POOL = "CAJeVEoSm1QQZccnCqYu9cnNF7TTD2fcUA3E5HQoxRvR";
 
 export async function GET() {
   const apiKey = process.env.X1_NINJA_KEY;
 
-  // Best source: x1.ninja API with key
   if (apiKey) {
     try {
       const res = await fetch(
-        "https://api.x1.ninja/v1/pools?baseToken=XNT&quoteToken=USDC.X",
+        `https://api.x1.ninja/v1/pools?address=${XNT_USDC_POOL}`,
         {
           headers: { Authorization: `Bearer ${apiKey}` },
           next: { revalidate: 30 },
@@ -27,12 +26,16 @@ export async function GET() {
       );
       if (res.ok) {
         const data = await res.json();
-        const pool = data.pools?.[0];
+        // Find the exact pool in the results
+        const pool = (data.pools || []).find(
+          (p) => p.address === XNT_USDC_POOL
+        );
         if (pool?.priceUsd) {
           return NextResponse.json({
             xntToUsd: parseFloat(pool.priceUsd),
             source: "x1ninja",
             cached: true,
+            poolAddress: XNT_USDC_POOL,
             timestamp: new Date().toISOString(),
           });
         }
@@ -44,7 +47,7 @@ export async function GET() {
 
   // Fallback: reasonable estimate
   return NextResponse.json({
-    xntToUsd: 0.60,
+    xntToUsd: 0.45,
     source: "fallback",
     cached: false,
     timestamp: new Date().toISOString(),
