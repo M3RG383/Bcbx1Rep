@@ -1,8 +1,6 @@
 "use client";
 import { useWallet } from "@/components/Providers";
 import { useState, useCallback, useRef, useEffect } from "react";
-import AudioAnalyzer from "@/components/AudioAnalyzer";
-import type { AnalysisResult } from "@/lib/audio-analyzer";
 import {
   Connection,
   PublicKey,
@@ -48,7 +46,7 @@ export default function UploadPage() {
   const [subscriptionSuccess, setSubscriptionSuccess] = useState<string | null>(null);
   const [subscribing, setSubscribing] = useState(false);
   const [payingFee, setPayingFee] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const artInputRef = useRef<HTMLInputElement>(null);
   const [albumArtBlob, setAlbumArtBlob] = useState<Blob | null>(null);
@@ -368,44 +366,24 @@ export default function UploadPage() {
         throw new Error(errBody.error || "Subscription failed");
       }
       const data = await res.json();
-      // Refetch from server to sync with persisted KV store
+      const newMemberStatus = {
+        isMember: true,
+        plan: data.plan,
+        expires: data.expires,
+        unlimitedUploads: true,
+        uploadFee: 0,
+        expiresInDays: data.expiresInDays,
+      };
+      setMemberStatus(newMemberStatus);
+      // Save to localStorage for persistence
       try {
-        const serverCheck = await fetch(`/api/membership/${publicKey}`);
-        if (serverCheck.ok) {
-          const serverData = await serverCheck.json();
-          if (serverData.isMember) {
-            setMemberStatus(serverData);
-            try {
-              localStorage.setItem(`bb_member_${publicKey}`, JSON.stringify({
-                plan: serverData.plan,
-                expires: new Date(serverData.expires).getTime(),
-                txSignature: txSignature,
-                activatedAt: Date.now(),
-              }));
-            } catch {}
-          }
-        }
-      } catch {}
-      // Fallback: use register response directly
-      if (!memberStatus?.isMember) {
-        const newMemberStatus = {
-          isMember: true,
+        localStorage.setItem(`bb_member_${publicKey}`, JSON.stringify({
           plan: data.plan,
-          expires: data.expires,
-          unlimitedUploads: true,
-          uploadFee: 0,
-          expiresInDays: data.expiresInDays,
-        };
-        setMemberStatus(newMemberStatus);
-        try {
-          localStorage.setItem(`bb_member_${publicKey}`, JSON.stringify({
-            plan: data.plan,
-            expires: new Date(data.expires).getTime(),
-            txSignature: txSignature,
-            activatedAt: Date.now(),
-          }));
-        } catch {}
-      }
+          expires: new Date(data.expires).getTime(),
+          txSignature: txSignature,
+          activatedAt: Date.now(),
+        }));
+      } catch {}
       setShowSubscribeModal(false);
       setSubscriptionSuccess(`🎫 ${plan === "yearly" ? "Yearly" : "Monthly"} membership active! ${data.expiresInDays} days of unlimited uploads remaining.`);
       setTimeout(() => setSubscriptionSuccess(null), 8000);
@@ -526,45 +504,7 @@ export default function UploadPage() {
 
   // Step 3 — Success
   if (step === 3 && uploadResult) {
-    // Generate a visceral audio profile description
-    const audioProfile = analysisResult ? (() => {
-      const dd = analysisResult.dashboard;
-      const bpm = dd.bpm > 0 ? dd.bpm : "—";
-
-      // Sub-bass presence — determines if you feel it on a big system
-      const subEnergy = dd.subEnergyIndex;
-      const subDesc = subEnergy > 0.25 ? "Deep sub-bass" : subEnergy > 0.12 ? "Present sub-bass" : "Light sub-bass";
-
-      // Punch factor from crest factor and transient energy
-      const crest = dd.crestFactorDB;
-      const punchDesc = crest > 16 ? "Hard-hitting" : crest > 12 ? "Punchy" : crest > 8 ? "Moderate" : "Soft";
-
-      // Stereo image width
-      const corr = dd.stereoCorrelation;
-      const widthDesc = corr < 0.2 ? "Very wide" : corr < 0.4 ? "Wide" : corr < 0.6 ? "Moderate" : corr < 0.8 ? "Narrow" : "Mono-like";
-
-      // Loud system readiness
-      const clip = dd.clippingRatio;
-      const cleanDesc = clip < 0.0005 ? "Pristine" : clip < 0.002 ? "Clean" : clip < 0.005 ? "Some artifacts" : "Dirty";
-
-      // Dynamic weight on big system
-      const dyn = dd.dynamicRangeDB;
-      const systemDesc = dyn > 14 ? "Thunderous on big rigs" : dyn > 10 ? "Slams on a system" : dyn > 6 ? "Pushes volume well" : "Lacks headroom";
-
-      // Top-end air
-      const treble = dd.trebleRatio;
-      const airDesc = treble > 0.18 ? "Sparkling highs" : treble > 0.10 ? "Clear highs" : treble > 0.05 ? "Dull highs" : "Muffled";
-
-      // Overall character
-      const overall = analysisResult.overallScore;
-      const character = overall >= 90 ? "Mastered" : overall >= 70 ? "Polished" : "Raw";
-
-      return `${character} · ${punchDesc} · ${subDesc} · ${cleanDesc} · ${widthDesc} stereo · ${airDesc} · ${bpm} BPM · ${systemDesc}`;
-    })() : null;
-
-    const scoreColor = analysisResult?.overallScore != null
-      ? (analysisResult.overallScore >= 90 ? "#22c55e" : analysisResult.overallScore >= 70 ? "#eab308" : "#ef4444")
-      : "#6c8cff";
+    const scoreColor = "#6c8cff";
 
     return (
       <div className="max-w-lg mx-auto px-4 py-20 text-center">
@@ -580,28 +520,7 @@ export default function UploadPage() {
             ID: {uploadResult}
           </div>
 
-          {/* Audio Score Card */}
-          {analysisResult && audioProfile && (
-            <div className="rounded-xl p-5 mb-4 text-left" style={{ backgroundColor: `${scoreColor}08`, border: `1px solid ${scoreColor}25` }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-bold flex items-center gap-2">
-                  <span>🎛️</span> Audio Quality Score
-                </span>
-                <div className="relative w-10 h-10 flex-shrink-0">
-                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="15.5" fill="none" stroke={scoreColor} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(analysisResult.overallScore / 100) * 97.4} 97.4`} />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-extrabold" style={{ color: scoreColor }}>{analysisResult.overallScore}</span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                {audioProfile}
-              </p>
-            </div>
-          )}
+          {/* Audio Score Card removed */}
 
           {/* Copyright Scan Notice */}
           <div className="bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.2)] rounded-xl p-4 mb-6 text-left">
@@ -731,16 +650,10 @@ export default function UploadPage() {
               <p className="font-bold truncate">{file?.name}</p>
               <p className="text-text-secondary text-sm">{file ? formatSize(file.size) : ""}</p>
             </div>
-            {analysisResult && (
+            {false && (
               <div className="flex-shrink-0 text-center">
-                <div
-                  className={`text-lg font-extrabold ${
-                    analysisResult.overallScore >= 90 ? "text-green-400" :
-                    analysisResult.overallScore >= 70 ? "text-yellow-400" :
-                    "text-red-400"
-                  }`}
-                >
-                  {analysisResult.overallScore}%
+                <div className="text-lg font-extrabold text-text-secondary">
+                  —%
                 </div>
                 <div className="text-[10px] text-text-secondary">Quality</div>
               </div>
@@ -755,15 +668,7 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* Audio Quality Analyzer */}
-          {file && (
-            <AudioAnalyzer
-              key={file.name + file.size}
-              file={file}
-              genre={subgenre || genre || "Default"}
-              onResult={setAnalysisResult}
-            />
-          )}
+          {/* Audio Analyzer removed */}
 
           {/* Album Art */}
           <div className="mb-6">

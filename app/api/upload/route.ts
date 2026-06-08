@@ -43,20 +43,6 @@ export async function POST(req: NextRequest) {
     }
     try { await enqueueScan({ songId, blobUrl: songUrl, title, artist }); } catch {}
 
-    // Trigger preview analysis in background (fire-and-forget)
-    try {
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : `http://localhost:${process.env.PORT || 3000}`;
-      fetch(`${baseUrl}/api/analyze-preview`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ songId, blobUrl: songUrl }),
-      }).catch(() => {});
-    } catch {
-      // Preview analysis is non-critical
-    }
-
     // Increment daily upload counter (EST)
     try {
       const estDate = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });

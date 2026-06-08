@@ -6,8 +6,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PublicKey, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { X1_RPC, buildSplitPurchaseTx } from "@/lib/x1";
-import AudioAnalyzer from "@/components/AudioAnalyzer";
-import type { AnalysisResult } from "@/lib/audio-analyzer";
 
 interface SongDetail {
   id: string;
@@ -47,50 +45,6 @@ export default function SongDetailPage() {
   const [xntRate, setXntRate] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Audio analyzer state — runs on preview audio (available to all visitors)
-  const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [audioFileGenre, setAudioFileGenre] = useState<string>("Default");
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-
-  // Fetch preview audio for analysis (works for all visitors before purchase)
-  const fetchPreviewForAnalysis = useCallback(async () => {
-    if (!song?.blobUrl || audioFile) return;
-    setAnalysisLoading(true);
-    try {
-      const rawUrl = song.blobUrl;
-      const filename = rawUrl.split("/").pop();
-      const previewUrl = song.previewUrl || `/api/preview/${filename}`;
-      const res = await fetch(previewUrl);
-      if (!res.ok) { setAnalysisLoading(false); return; }
-      const blob = await res.blob();
-      const ext = filename?.includes(".") ? filename.split(".").pop() : "mp3";
-      const f = new File([blob], filename || `track.${ext}`, { type: blob.type || `audio/${ext}` });
-      setAudioFile(f);
-      setAudioFileGenre(song.genre || "Default");
-    } catch {}
-    setAnalysisLoading(false);
-  }, [song, audioFile]);
-
-  // Fetch full audio for detailed analysis after purchase
-  const fetchAudioFile = useCallback(async () => {
-    if (!song?.blobUrl || !purchased) return;
-    try {
-      const rawUrl = song.blobUrl;
-      const filename = rawUrl.split("/").pop();
-      const res = await fetch(`/api/uploads/${filename}`);
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const ext = filename?.includes(".") ? filename.split(".").pop() : "mp3";
-      const f = new File([blob], filename || `track.${ext}`, { type: blob.type || `audio/${ext}` });
-      setAudioFile(f);
-      setAudioFileGenre(song.genre || "Default");
-    } catch {}
-  }, [song, purchased]);
-
-  useEffect(() => { fetchPreviewForAnalysis(); }, [fetchPreviewForAnalysis]);
-  useEffect(() => { fetchAudioFile(); }, [fetchAudioFile]);
 
   // Clean up audio when leaving the page — covers React unmount + SPA transitions
   useEffect(() => {
@@ -509,28 +463,6 @@ export default function SongDetailPage() {
               </div>
             </div>
           </div>
-
-          {/* Audio Analyzer Dashboard — available to all visitors via preview */}
-          {audioFile && (
-            <div className="mt-6">
-              <h3 className="font-semibold mb-3 text-text-secondary text-sm tracking-wide uppercase">
-                🔊 Audio Analysis Dashboard
-              </h3>
-              {analysisLoading ? (
-                <div className="card p-6 text-center">
-                  <span className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full inline-block animate-spin" />
-                  <p className="text-text-secondary text-sm mt-2">Analyzing preview audio…</p>
-                </div>
-              ) : (
-                <AudioAnalyzer
-                  key={audioFile.name + audioFile.size}
-                  file={audioFile}
-                  genre={audioFileGenre}
-                  onResult={setAnalysisResult}
-                />
-              )}
-            </div>
-          )}
 
           {connected && purchased && (
             <div className="mt-6 card p-5 border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.05)]">
