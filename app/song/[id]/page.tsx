@@ -70,7 +70,7 @@ export default function SongDetailPage() {
     try {
       const rawUrl = song.blobUrl;
       const filename = rawUrl.split("/").pop();
-      const previewUrl = song.previewUrl || `/api/uploads/${filename}`;
+      const previewUrl = song.previewUrl || `/api/preview/${filename}`;
       const res = await fetch(previewUrl);
       if (!res.ok) { setAnalysisLoading(false); return; }
       const blob = await res.blob();
