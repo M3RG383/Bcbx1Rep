@@ -9,6 +9,14 @@ import { X1_RPC, buildSplitPurchaseTx } from "@/lib/x1";
 import AudioAnalyzer from "@/components/AudioAnalyzer";
 import type { AnalysisResult } from "@/lib/audio-analyzer";
 
+function cacheScoreColor(score: number): string {
+  return score >= 90 ? "#22c55e" : score >= 70 ? "#eab308" : "#ef4444";
+}
+
+function cacheScoreBgColor(score: number): string {
+  return score >= 90 ? "rgba(34,197,94,0.1)" : score >= 70 ? "rgba(234,179,8,0.1)" : "rgba(239,68,68,0.1)";
+}
+
 interface SongDetail {
   id: string;
   title: string;
@@ -53,6 +61,7 @@ export default function SongDetailPage() {
   const [audioFileGenre, setAudioFileGenre] = useState<string>("Default");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [cachedAnalysis, setCachedAnalysis] = useState<AnalysisResult | null>(null);
 
   // Fetch preview audio for analysis (works for all visitors before purchase)
   const fetchPreviewForAnalysis = useCallback(async () => {
@@ -91,6 +100,20 @@ export default function SongDetailPage() {
 
   useEffect(() => { fetchPreviewForAnalysis(); }, [fetchPreviewForAnalysis]);
   useEffect(() => { fetchAudioFile(); }, [fetchAudioFile]);
+
+  // Fetch cached analysis on load — shows scores immediately on revisit
+  useEffect(() => {
+    if (!params?.id) return;
+    fetch(`/api/analysis?songId=${params.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.result) {
+          setCachedAnalysis(data.result);
+          setAnalysisResult(data.result);
+        }
+      })
+      .catch(() => {});
+  }, [params?.id]);
 
   // Clean up audio when leaving the page — covers React unmount + SPA transitions
   useEffect(() => {
@@ -510,7 +533,47 @@ export default function SongDetailPage() {
             </div>
           </div>
 
-          {/* Audio Analyzer Dashboard — available to all visitors via preview */}
+          {/* Audio Analysis Dashboard — available to all visitors via preview */}
+
+          {/* Show cached analysis scores immediately if available (even before audio loads) */}
+          {cachedAnalysis && !audioFile && (
+            <div className="mt-6 card p-5 border border-[rgba(108,140,255,0.12)]">
+              <h3 className="font-semibold mb-3 text-text-secondary text-sm tracking-wide uppercase">
+                🔊 Audio Analysis Dashboard
+              </h3>
+              <div
+                className="p-4 rounded-2xl text-sm"
+                style={{
+                  backgroundColor: cacheScoreBgColor(cachedAnalysis.overallScore),
+                  border: `1px solid ${cacheScoreColor(cachedAnalysis.overallScore)}33`,
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="text-2xl font-extrabold"
+                    style={{ color: cacheScoreColor(cachedAnalysis.overallScore) }}
+                  >
+                    {cachedAnalysis.overallScore}%
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="font-semibold text-sm mb-0.5"
+                      style={{ color: cacheScoreColor(cachedAnalysis.overallScore) }}
+                    >
+                      {cachedAnalysis.passed ? "✅ Ready to Upload" : "❌ Not Recommended"}
+                    </p>
+                    <p className="text-text-secondary text-xs leading-relaxed">
+                      {cachedAnalysis.summary}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-text-secondary text-xs mt-3 opacity-60">
+                Loading full analysis dashboard…
+              </p>
+            </div>
+          )}
+
           {audioFile && (
             <div className="mt-6">
               <h3 className="font-semibold mb-3 text-text-secondary text-sm tracking-wide uppercase">
@@ -526,6 +589,7 @@ export default function SongDetailPage() {
                   key={audioFile.name + audioFile.size}
                   file={audioFile}
                   genre={audioFileGenre}
+                  songId={song?.id}
                   onResult={setAnalysisResult}
                 />
               )}

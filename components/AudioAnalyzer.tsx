@@ -6,6 +6,7 @@ import type { AnalysisResult, DashboardData } from "@/lib/audio-analyzer";
 interface Props {
   file: File;
   genre: string;
+  songId?: string;
   onResult?: (r: AnalysisResult) => void;
 }
 
@@ -776,11 +777,13 @@ function drawAvgSpectrum(ctx: CanvasRenderingContext2D, dd: DashboardData, w: nu
 
 // ─── Main Component ─────────────────────────────────────
 
-export default function AudioAnalyzer({ file, genre, onResult }: Props) {
+export default function AudioAnalyzer({ file, genre, songId, onResult }: Props) {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+
+  const submitted = useRef(false);
 
   const wfRef = useRef<HTMLCanvasElement>(null);
   const melRef = useRef<HTMLCanvasElement>(null);
@@ -808,6 +811,18 @@ export default function AudioAnalyzer({ file, genre, onResult }: Props) {
       setLoading(false);
     }
   }, [file, genre, onResult]);
+
+  // Auto-submit analysis result to cache when analysis completes
+  useEffect(() => {
+    if (!result || !songId) return;
+    if (submitted.current) return;
+    submitted.current = true;
+    fetch("/api/analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ songId, analysis: result }),
+    }).catch(() => {});
+  }, [result, songId]);
 
   useEffect(() => { run(); }, [run]);
 
