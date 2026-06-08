@@ -44,6 +44,7 @@ export default function SongDetailPage() {
   const [downloading, setDownloading] = useState(false);
 
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  const [xntRate, setXntRate] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -165,6 +166,13 @@ export default function SongDetailPage() {
   useEffect(() => {
     checkPurchaseStatus();
   }, [checkPurchaseStatus]);
+
+  useEffect(() => {
+    fetch("/api/price")
+      .then((res) => res.json())
+      .then((data) => setXntRate(data.xntToUsd))
+      .catch(() => {});
+  }, []);
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -395,6 +403,9 @@ export default function SongDetailPage() {
           <div className="card p-5">
             <div className="text-center mb-4">
               <div className="text-3xl font-extrabold text-accent">{song.price} XNT</div>
+              {xntRate !== null && (
+                <div className="text-sm text-text-secondary mt-1">≈ ${(song.price * xntRate).toFixed(2)} USD</div>
+              )}
               <div className="text-text-secondary text-sm mt-1">{formatSize(song.fileSize)}</div>
             </div>
 
@@ -494,7 +505,7 @@ export default function SongDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Price</span>
-                <span className="font-bold">{song.price} XNT</span>
+                <span className="font-bold">{song.price} XNT{xntRate !== null && <span className="font-normal text-text-secondary text-xs ml-1">≈ ${(song.price * xntRate).toFixed(2)} USD</span>}</span>
               </div>
             </div>
           </div>

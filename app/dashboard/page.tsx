@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [salesCount, setSalesCount] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
+  const [xntRate, setXntRate] = useState<number | null>(null);
   // Delete state
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState<Song | null>(null);
@@ -83,6 +84,13 @@ export default function DashboardPage() {
       fetchArtistProfile();
     }
   }, [connected, publicKey, fetchMySongs, fetchArtistProfile]);
+
+  useEffect(() => {
+    fetch("/api/price")
+      .then((res) => res.json())
+      .then((data) => setXntRate(data.xntToUsd))
+      .catch(() => {});
+  }, []);
 
   const handleDeleteClick = (song: Song) => {
     setConfirmDelete(song);
@@ -268,6 +276,9 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-bold text-accent">{s.price} XNT</div>
+                  {xntRate !== null && (
+                    <div className="text-xs text-text-secondary">≈ ${(s.price * xntRate).toFixed(2)} USD</div>
+                  )}
                 </div>
               </Link>
               <button

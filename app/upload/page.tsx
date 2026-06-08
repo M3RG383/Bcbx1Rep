@@ -41,6 +41,7 @@ export default function UploadPage() {
   const [step, setStep] = useState(1);
   const [memberStatus, setMemberStatus] = useState<any>(null);
   const [checkingMember, setCheckingMember] = useState(false);
+  const [xntRate, setXntRate] = useState<number | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [acceptedTos, setAcceptedTos] = useState(false);
   const [pendingFeeTx, setPendingFeeTx] = useState<string | null>(null);
@@ -121,6 +122,13 @@ export default function UploadPage() {
   const allGenres = Object.keys(genreTree);
 
   // Check membership — localStorage backed, server as fallback
+  useEffect(() => {
+    fetch("/api/price")
+      .then((res) => res.json())
+      .then((data) => setXntRate(data.xntToUsd))
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (publicKey) {
       // First try localStorage
@@ -658,7 +666,7 @@ export default function UploadPage() {
             <div className="warm-card p-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-text-secondary">
-                  <span className="font-semibold text-white">1.5 XNT</span> per upload — or{" "}
+                  <span className="font-semibold text-white">1.5 XNT{xntRate !== null && <span className="font-normal text-text-secondary text-xs ml-1">≈ ${(1.5 * xntRate).toFixed(2)} USD</span>}</span> per upload — or{" "}
                   <button onClick={() => setShowSubscribeModal(true)} className="text-[#3b82f6] underline hover:no-underline font-semibold">
                     subscribe
                   </button>
@@ -893,7 +901,7 @@ export default function UploadPage() {
               </span>
               {memberStatus && !memberStatus.isMember && (
                 <span className="text-xs text-[#60a5fa] font-semibold ml-auto">
-                  +1.5 XNT fee
+                  +1.5 XNT fee{xntRate !== null && <span className="text-text-secondary"> ≈ ${(1.5 * xntRate).toFixed(2)} USD</span>}
                 </span>
               )}
             </div>
@@ -995,6 +1003,7 @@ export default function UploadPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-extrabold accent-text">1.5 XNT</div>
+              {xntRate !== null && <div className="text-xs text-text-secondary">≈ ${(1.5 * xntRate).toFixed(2)} USD</div>}
                 </div>
               </div>
               <button className="bubble-btn w-full mt-4" disabled={payingFee}>
@@ -1004,7 +1013,7 @@ export default function UploadPage() {
                     Signing Tx...
                   </span>
                 ) : (
-                  "💳 Pay 1.5 XNT and Upload"
+                  `💳 Pay 1.5 XNT and Upload${xntRate !== null ? ` (≈ $${(1.5 * xntRate).toFixed(2)} USD)` : ""}`
                 )}
               </button>
             </div>
@@ -1019,6 +1028,7 @@ export default function UploadPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-extrabold text-[#c084fc]">8 XNT</div>
+                  {xntRate !== null && <div className="text-xs text-text-secondary">≈ ${(8 * xntRate).toFixed(2)} USD</div>}
                   <div className="text-xs text-text-secondary">/month</div>
                 </div>
               </div>
@@ -1046,6 +1056,7 @@ export default function UploadPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-extrabold accent-text">62 XNT</div>
+                  {xntRate !== null && <div className="text-xs text-text-secondary">≈ ${(62 * xntRate).toFixed(2)} USD</div>}
                   <div className="text-xs text-text-secondary">/year</div>
                 </div>
               </div>
