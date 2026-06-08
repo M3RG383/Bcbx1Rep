@@ -54,10 +54,41 @@ export default function SongDetailPage() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
+  // Check for cached analysis result on page load
+  const [cacheChecked, setCacheChecked] = useState(false);
+
   // Fetch preview audio for analysis (works for all visitors before purchase)
   const fetchPreviewForAnalysis = useCallback(async () => {
-    if (!song?.blobUrl || audioFile) return;
+    if (!song?.blobUrl || audioFile || analysisResult || cacheChecked) return;
     setAnalysisLoading(true);
+
+    // First, check if a cached analysis exists
+    try {
+      const cacheRes = await fetch(`/api/analysis?songId=${params.id}`);
+      if (cacheRes.ok) {
+        const cacheData = await cacheRes.json();
+        if (cacheData.result) {
+          // Use cached analysis — skip audio fetch entirely
+          const cached = cacheData.result;
+          const reconstructed: AnalysisResult = {
+            overallScore: cached.overallScore,
+            passed: cached.passed,
+            genre: cached.genre,
+            metrics: cached.metrics,
+            summary: cached.summary,
+            enhancementTips: cached.enhancementTips,
+            dashboard: null as any, // dashboard not cached; component won't render canvases
+          };
+          setAnalysisResult(reconstructed);
+          setAnalysisLoading(false);
+          setCacheChecked(true);
+          return;
+        }
+      }
+    } catch {}
+    setCacheChecked(true);
+
+    // No cache — fetch audio and run client-side analysis
     try {
       const rawUrl = song.blobUrl;
       const filename = rawUrl.split("/").pop();
@@ -71,7 +102,7 @@ export default function SongDetailPage() {
       setAudioFileGenre(song.genre || "Default");
     } catch {}
     setAnalysisLoading(false);
-  }, [song, audioFile]);
+  }, [song, audioFile, analysisResult, cacheChecked, params.id]);
 
   // Fetch full audio for detailed analysis after purchase
   const fetchAudioFile = useCallback(async () => {
@@ -511,6 +542,53 @@ export default function SongDetailPage() {
           </div>
 
           {/* Audio Analyzer Dashboard — available to all visitors via preview */}
+          {analysisResult && !audioFile && (
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3 text-text-secondary text-sm tracking-wide uppercase">
+                🔊 Audio Quality (Cached)
+              </h3>
+              <div className="warm-card p-4 mb-6 border border-[rgba(108,140,255,0.12)]">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <span>🎛️</span>
+                  <span className="text-sm font-semibold">Audio Analysis</span>
+                  <span
+                    className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                      analysisResult.overallScore >= 90 ? "bg-green-400/10 text-green-400" :
+                      analysisResult.overallScore >= 70 ? "bg-yellow-400/10 text-yellow-400" :
+                      "bg-red-400/10 text-red-400"
+                    }`}
+                  >
+                    {analysisResult.overallScore}%
+                  </span>
+                </div>
+                <p className="text-sm text-text-secondary mb-3">
+                  {analysisResult.summary}
+                </p>
+                {analysisResult.metrics && analysisResult.metrics.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {analysisResult.metrics.map((m) => {
+                      const c = m.passed ? "#22c55e" : m.score >= 50 ? "#eab308" : "#ef4444";
+                      return (
+                        <div key={m.name} className="p-3 rounded-xl text-xs" style={{ backgroundColor: `${c}08`, border: `1px solid ${c}20` }}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-semibold text-text-secondary">{m.name}</span>
+                            <span className="font-mono font-bold" style={{ color: c }}>{m.score}/100</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-text-secondary">{m.value}</span>
+                            <span className="opacity-60 text-[10px]">Threshold: {m.threshold}</span>
+                          </div>
+                          <div className="mt-1.5 h-1 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${m.score}%`, backgroundColor: c }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {audioFile && (
             <div className="mt-6">
               <h3 className="font-semibold mb-3 text-text-secondary text-sm tracking-wide uppercase">
@@ -527,6 +605,7 @@ export default function SongDetailPage() {
                   file={audioFile}
                   genre={audioFileGenre}
                   onResult={setAnalysisResult}
+                  songId={params.id}
                 />
               )}
             </div>
