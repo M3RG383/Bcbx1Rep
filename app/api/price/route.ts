@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -11,9 +11,6 @@ export const runtime = "nodejs";
  *
  * The user's x1.ninja key will be set as X1_NINJA_KEY in Vercel env.
  */
-
-// Known XNT/USDC.X pool on X1 (Raydium-style)
-const XNT_USDC_POOL = HARDCODED_POOL_ADDRESS;
 
 export async function GET() {
   const apiKey = process.env.X1_NINJA_KEY;
@@ -52,4 +49,4 @@ export async function GET() {
     cached: false,
     timestamp: new Date().toISOString(),
   });
-}  // deploy trigger
+}
