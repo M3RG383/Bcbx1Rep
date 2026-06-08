@@ -7,7 +7,6 @@ interface Props {
   file: File;
   genre: string;
   onResult?: (r: AnalysisResult) => void;
-  songId?: string;
 }
 
 // ─── Canvas helpers ─────────────────────────────────────
@@ -777,12 +776,11 @@ function drawAvgSpectrum(ctx: CanvasRenderingContext2D, dd: DashboardData, w: nu
 
 // ─── Main Component ─────────────────────────────────────
 
-export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) {
+export default function AudioAnalyzer({ file, genre, onResult }: Props) {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const wfRef = useRef<HTMLCanvasElement>(null);
   const melRef = useRef<HTMLCanvasElement>(null);
@@ -795,38 +793,6 @@ export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) 
   // Canvas dimensions
   const canvasW = 700;
   const panelH = 150;
-
-  // Auto-submit analysis result to server for persistent caching
-  useEffect(() => {
-    if (!result || !songId || submitted) return;
-
-    const analysisPayload = {
-      overallScore: result.overallScore,
-      passed: result.passed,
-      genre: result.genre,
-      metrics: result.metrics,
-      summary: result.summary,
-      enhancementTips: result.enhancementTips,
-      createdAt: new Date().toISOString(),
-    };
-
-    fetch("/api/analysis", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        songId,
-        analysis: analysisPayload,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) console.warn("Failed to cache analysis result");
-        setSubmitted(true);
-      })
-      .catch((err) => {
-        console.warn("Failed to cache analysis result:", err);
-        setSubmitted(true); // still mark as submitted to avoid retry spam
-      });
-  }, [result, songId, submitted]);
 
   const run = useCallback(async () => {
     if (!file) return;
@@ -849,7 +815,6 @@ export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) 
   useEffect(() => {
     if (!result) return;
     const dd = result.dashboard;
-    if (!dd) return; // No dashboard data (cached result) — skip canvas rendering
 
     // Waveform
     const wf = wfRef.current;
@@ -982,10 +947,8 @@ export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) 
             </div>
           </div>
 
-          {/* 5-Panel Dashboard — hidden when data is from cache (no dashboard) */}
-          {result.dashboard && (
-            <>
-            <div className="bg-black rounded-2xl overflow-hidden border border-[rgba(255,255,255,0.08)]" style={{ aspectRatio: `${canvasW} / ${panelH * 7 + 60}` }}>
+          {/* 5-Panel Dashboard */}
+          <div className="bg-black rounded-2xl overflow-hidden border border-[rgba(255,255,255,0.08)]" style={{ aspectRatio: `${canvasW} / ${panelH * 7 + 60}` }}>
             <div className="w-full" style={{ padding: 0 }}>
               <canvas ref={wfRef} className="w-full h-auto block" style={{ aspectRatio: `${canvasW} / ${panelH}` }} />
               <canvas ref={melRef} className="w-full h-auto block" style={{ aspectRatio: `${canvasW} / ${panelH}` }} />
@@ -995,9 +958,7 @@ export default function AudioAnalyzer({ file, genre, onResult, songId }: Props) 
               <canvas ref={bwRef} className="w-full h-auto block" style={{ aspectRatio: `${canvasW} / ${panelH}` }} />
               <canvas ref={avgRef} className="w-full h-auto block" style={{ aspectRatio: `${canvasW} / ${panelH}` }} />
             </div>
-            </div>
-            </>
-          )}
+          </div>
 
           {/* Metrics Grid */}
           <div>
